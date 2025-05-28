@@ -1,13 +1,28 @@
+require('dotenv').config();
+const mongoose = require('mongoose');
 const express = require('express');
 const path = require('path');
 const app = express();
 
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ Connecté à MongoDB'))
+  .catch(err => console.error('❌ Erreur MongoDB :', err));
+
+
+const Message = mongoose.model('Message', {
+  name: String,
+  message: String,
+  date: { type: Date, default: Date.now }
+});
+
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
+app.post('/message', async (req, res) => {
+  const { name, message } = req.body;
 
-app.post('/message', (req, res) => {
-  const name = req.body.name || 'Anonyme';
-  const message = req.body.message || 'Aucun message';
+  try {
+    await Message.create({ name, message });
 
   res.send(`
     <!DOCTYPE html>
@@ -85,6 +100,10 @@ app.post('/message', (req, res) => {
     </body>
     </html>
   `);
+} catch (err) {
+    console.error('❌ Erreur MongoDB :', err);
+    res.status(500).send("Erreur lors de l'enregistrement du message.");
+  }
 });
 
 
